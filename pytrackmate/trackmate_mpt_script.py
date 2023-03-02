@@ -1,4 +1,7 @@
-# import sys
+"""
+This script runs a single video through automated trackmate tracking
+"""
+import sys
 import os
 import imagej
 import scyjava as sj
@@ -39,6 +42,41 @@ model = Model()
 model.setLogger(Logger.IJ_LOGGER)
 
 imp = ij.py.to_imageplus(plga_peg_image)
+
+dims = imp.getDimensions() # default order: XYCZT
+
+if dims[4] == 1:
+    print('need to change order')
+    imp.setDimensions(dims[4], dims[3], dims[2])
+
+settings = Settings(imp)
+# Configure detector
+settings.detectorFactory = DogDetectorFactory()
+settings.detectorSettings = {
+    'DO_SUBPIXEL_LOCALIZATION' : False,
+    'RADIUS' : 6.0,
+    'TARGET_CHANNEL': ij.py.to_java(1),
+    'DO_MEDIAN_FILTERING': True,
+    'THRESHOLD': 0.0
+}
+
+# Configure tracker
+settings.trackerFactory = SparseLAPTrackerFactory()
+settings.trackerSettings = LAPUtils.getDefaultSegmentSettingsMap()
+settings.trackerSettings['LINKING_MAX_DISTANCE'] = 15.0
+settings.trackerSettings['GAP_CLOSING_MAX_DISTANCE'] = 20.0
+settings.trackerSettings['MAX_FRAME_GAP'] = ij.py.to_java(6)
+
+trackmate = TrackMate(model, settings)
+ok = trackmate.checkInput()
+if not ok:
+    sys.exit(str(trackmate.getErrorMessage()))
+
+ok = trackmate.process()
+if not ok:
+    sys.exit(str(trackmate.getErrorMessage()))
+
+model.getLogger().log('Found ' + str(model.getTrackModel().nTracks(True)) + ' tracks.')
 
 
 print('Done!')
