@@ -6,7 +6,7 @@ import os
 import imagej
 import scyjava as sj
 # import random
-sj.config.add_options('-Xmx12g')
+sj.config.add_options('-Xmx6g')
 
 os.environ["JAVA_HOME"] = "/Users/nelsschimek/anaconda3/envs/pytrackmate/"
 
