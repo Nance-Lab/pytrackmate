@@ -26,7 +26,6 @@ RUN python /opt/fiji/init_fiji.py
 
 WORKDIR /
 COPY read_settings_and_process_mpt_tiff.py .
-COPY first_30_slides.tif .
 COPY entrypoint.sh .
 #RUN mamba install jupyterlab
 #WORKDIR /notebooks
