@@ -18,7 +18,6 @@ from ij.io import Opener
 from fiji.plugin.trackmate import TrackMate
 from fiji.plugin.trackmate import Logger
 from fiji.plugin.trackmate.io import TmXmlReader, TmXmlWriter
-
 from fiji.plugin.trackmate import Model
 from fiji.plugin.trackmate import Settings
 from fiji.plugin.trackmate import TrackMate
@@ -28,7 +27,7 @@ from fiji.plugin.trackmate.tracking.jaqaman import SparseLAPTrackerFactory
 from fiji.plugin.trackmate.gui.displaysettings import DisplaySettingsIO
 import fiji.plugin.trackmate.visualization.hyperstack.HyperStackDisplayer as HyperStackDisplayer
 import fiji.plugin.trackmate.features.FeatureFilter as FeatureFilter
-
+from fiji.plugin.trackmate.detection import DogDetectorFactory
 
 # We have to do the following to avoid errors with UTF8 chars generated in
 # TrackMate that will mess with our Fiji Jython.
@@ -51,7 +50,8 @@ sys.setdefaultencoding("utf-8")
 # imp3 = Opener().openImage(srcpath)
 
 # print("reading data from: " + srcpath)
-imp = IJ.openImage("first_30_slides.tif")
+imp = IJ.openImage("PBS_control_3_0_1.tif")
+IJ.run(imp, "Properties...", "channels=1 slices=1 frames=651 unit=pixel pixel_width=1.0000 pixel_height=1.0000 voxel_depth=1.0000");
 #imp = IJ.openImage(data_path)
 print("data read successfully")
 
@@ -65,34 +65,35 @@ model.setLogger(Logger.IJ_LOGGER)
 #------------------------
 # Prepare settings object
 #------------------------
- 
 settings = Settings(imp)
+
  
 # Configure detector - We use the Strings for the keys
-settings.detectorFactory = LogDetectorFactory()
+settings.detectorFactory = DogDetectorFactory()
 settings.detectorSettings = {
     'DO_SUBPIXEL_LOCALIZATION' : False, #turn to false
-    'RADIUS' : 12.0,
+    'RADIUS' : 6.0,
     'TARGET_CHANNEL' : 1,
     'THRESHOLD' : 0.0,
     'DO_MEDIAN_FILTERING' : True,
 }  
- 
+
+
 # Configure spot filters - Classical filter on quality
-filter1 = FeatureFilter('QUALITY', 10, True)
+filter1 = FeatureFilter('QUALITY', 2.9, True)
 settings.addSpotFilter(filter1)
 print("quality is now 10")
 # Configure tracker - We want to allow merges and fusions
 settings.trackerFactory = SparseLAPTrackerFactory() # check this
 settings.trackerSettings = settings.trackerFactory.getDefaultSettings() # almost good enough
-settings.trackerSettings['MAX_FRAME_GAP'] = 4
+settings.trackerSettings['MAX_FRAME_GAP'] = 6
 settings.trackerSettings['ALTERNATIVE_LINKING_COST_FACTOR'] = 1.05
-settings.trackerSettings['LINKING_MAX_DISTANCE'] = 10.0
-settings.trackerSettings['GAP_CLOSING_MAX_DISTANCE'] = 150.0
-settings.trackerSettings['SPLITTING_MAX_DISTANCE'] = 10.0
+settings.trackerSettings['LINKING_MAX_DISTANCE'] = 15.0
+settings.trackerSettings['GAP_CLOSING_MAX_DISTANCE'] = 20.0
+settings.trackerSettings['SPLITTING_MAX_DISTANCE'] = 15.0
 settings.trackerSettings['ALLOW_GAP_CLOSING'] = True
-settings.trackerSettings['MERGING_MAX_DISTANCE'] = 10.0
-settings.trackerSettings['CUTOFF_PERCENTILE'] = 0.7
+settings.trackerSettings['MERGING_MAX_DISTANCE'] = 15.0
+settings.trackerSettings['CUTOFF_PERCENTILE'] = 0.9
 settings.trackerSettings['ALLOW_TRACK_SPLITTING'] = False
 settings.trackerSettings['ALLOW_TRACK_MERGING'] = False
 print(settings.trackerSettings)
@@ -140,7 +141,9 @@ selectionModel = SelectionModel( model )
 # displayer.refresh()
  
 # Echo results with the logger we set at start:
-model.getLogger().log( str( model ) )
+model.getLogger().log('Found ' + str(model.getTrackModel().nTracks(True)) + ' tracks.')
+
+selectionModel = SelectionModel(model)
 fm = model.getFeatureModel()
 
 for id in model.getTrackModel().trackIDs(True):
