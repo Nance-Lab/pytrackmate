@@ -3,7 +3,7 @@ import time
 import os
 import glob as gb
 
-def process_videos_parallel(args):
+def process_video_parallel(args):
   '''
   Processes a single video in parallel.
 
@@ -51,8 +51,7 @@ def run_trackmate_parallel(path, trackmate_fn, trackmate_fn_args, num_threads=mp
   
   Outputs
   ----------
-  Tracking results from each tif file (i.e. a Tuple of csv files, where each element
-  of the Tuple is the tracking data csv from a video.
+  Tracking results from each tif file.
   '''
 
   threads_avail = mp.cpu_count()
@@ -75,10 +74,7 @@ def run_trackmate_parallel(path, trackmate_fn, trackmate_fn_args, num_threads=mp
   # create the arguments that `process_videos_parallel` will take
   args = [(video, trackmate_fn, trackmate_fn_args) for video in videos]
   
-  pool.starmap(process_videos_parallel, args)
-
-  # pool.apply_async(process_videos_parallel, args=(videos, trackmate_fn, trackmate_fn_args))
-  # pool.apply(process_videos_parallel, args=trackmate_args)
+  pool.starmap(process_video_parallel, args)
   
   finish_time = time.perf_counter()
   print(f"Program finished in {finish_time-start_time} seconds.")
