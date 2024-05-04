@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 #from pathlib import Path
 
 # if len(sys.argv) != 3:
@@ -34,139 +35,106 @@ from fiji.plugin.trackmate.detection import DogDetectorFactory
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
-# -----------------
-# Read data stack
-# -----------------
+class ImageProcessor:
+    def __init__(self, settings_path, output_path):
+        self.model = Model()
+        self.model.setLogger(Logger.IJ_LOGGER)
+        self.settings_path = settings_path
+        self.output_path = output_path
+        self.track_data_filename = None
+        self.spot_data_filename = None
+        
+        if not os.path.exists(self.output_path):
+            os.makedirs(self.output_path)
+        
+    def load_image(self):
+        self.imp = IJ.openImage(self.image_path)
+        IJ.run(self.imp, "Properties...", "channels=1 slices=1 frames=651 unit=pixel pixel_width=1.0000 pixel_height=1.0000 voxel_depth=1.0000");
 
-#srcpath = '/Users/nelsschimek/Documents/nancelab/pytrackmate/data/Healthy-QD-BEVs-Video3_0_1.tif'
- 
-#print('uisng constructor')
-#imp1 = ImagePlus(srcpath)
- 
-# print('using IJ static method')
-# imp2 = IJ.openImage(srcpath)
- 
-# print('Using Opener class')
-# imp3 = Opener().openImage(srcpath)
+    def load_settings(self):
+        self.settings = Settings(self.imp)
+        
+        with open(self.settings_path) as f:
+            self.settings_json = json.load(f)
+             
+        self.settings.detectorFactory = DogDetectorFactory()
+        self.settings.detectorSettings = self.settings_json["detectorSettings"]
+        
+        filter1 = FeatureFilter('QUALITY', self.settings_json["quality"], True)
+        self.settings.addSpotFilter(filter1)
 
-# print("reading data from: " + srcpath)
-imp = IJ.openImage("PBS_control_3_0_1.tif")
-IJ.run(imp, "Properties...", "channels=1 slices=1 frames=651 unit=pixel pixel_width=1.0000 pixel_height=1.0000 voxel_depth=1.0000");
-#imp = IJ.openImage(data_path)
-print("data read successfully")
+        self.settings.trackerFactory = SparseLAPTrackerFactory()
+        self.settings.trackerSettings = self.settings.trackerFactory.getDefaultSettings()
+        self.settings.trackerSettings.update(self.settings_json["trackerSettings"])
+        print(self.settings.trackerSettings)
 
-model = Model()
- 
-# Send all messages to ImageJ log window.
-model.setLogger(Logger.IJ_LOGGER)
- 
- 
- 
-#------------------------
-# Prepare settings object
-#------------------------
-settings = Settings(imp)
-
- 
-# Configure detector - We use the Strings for the keys
-settings.detectorFactory = DogDetectorFactory()
-settings.detectorSettings = {
-    'DO_SUBPIXEL_LOCALIZATION' : False, #turn to false
-    'RADIUS' : 6.0,
-    'TARGET_CHANNEL' : 1,
-    'THRESHOLD' : 0.0,
-    'DO_MEDIAN_FILTERING' : True,
-}  
-
-
-# Configure spot filters - Classical filter on quality
-filter1 = FeatureFilter('QUALITY', 2.9, True)
-settings.addSpotFilter(filter1)
-print("quality is now 10")
-# Configure tracker - We want to allow merges and fusions
-settings.trackerFactory = SparseLAPTrackerFactory() # check this
-settings.trackerSettings = settings.trackerFactory.getDefaultSettings() # almost good enough
-settings.trackerSettings['MAX_FRAME_GAP'] = 6
-settings.trackerSettings['ALTERNATIVE_LINKING_COST_FACTOR'] = 1.05
-settings.trackerSettings['LINKING_MAX_DISTANCE'] = 15.0
-settings.trackerSettings['GAP_CLOSING_MAX_DISTANCE'] = 20.0
-settings.trackerSettings['SPLITTING_MAX_DISTANCE'] = 15.0
-settings.trackerSettings['ALLOW_GAP_CLOSING'] = True
-settings.trackerSettings['MERGING_MAX_DISTANCE'] = 15.0
-settings.trackerSettings['CUTOFF_PERCENTILE'] = 0.9
-settings.trackerSettings['ALLOW_TRACK_SPLITTING'] = False
-settings.trackerSettings['ALLOW_TRACK_MERGING'] = False
-print(settings.trackerSettings)
-# Add ALL the feature analyzers known to TrackMate. They will 
-# yield numerical features for the results, such as speed, mean intensity etc.
-settings.addAllAnalyzers()
- 
-# Configure track filters - We want to get rid of the two immobile spots at
-# the bottom right of the image. Track displacement must be above 10 pixels.
- 
-
- 
- 
-#-------------------
-# Instantiate plugin
-#-------------------
- 
-trackmate = TrackMate(model, settings)
- 
-#--------
-# Process
-#--------
- 
-ok = trackmate.checkInput()
-if not ok:
-    sys.exit(str(trackmate.getErrorMessage()))
- 
-ok = trackmate.process()
-if not ok:
-    sys.exit(str(trackmate.getErrorMessage()))
- 
- 
-#----------------
-# Display results
-#----------------
- 
-# A selection.
-selectionModel = SelectionModel( model )
- 
-# Read the default display settings.
-# ds = DisplaySettingsIO.readUserDefault()
- 
-# displayer =  HyperStackDisplayer( model, selectionModel, imp, ds )
-# displayer.render()
-# displayer.refresh()
- 
-# Echo results with the logger we set at start:
-model.getLogger().log('Found ' + str(model.getTrackModel().nTracks(True)) + ' tracks.')
-
-selectionModel = SelectionModel(model)
-fm = model.getFeatureModel()
-
-for id in model.getTrackModel().trackIDs(True):
- 
-    # Fetch the track feature from the feature model.
-    v = fm.getTrackFeature(id, 'TRACK_MEAN_SPEED')
-    model.getLogger().log('')
-    model.getLogger().log('Track ' + str(id) + ': mean velocity = ' + str(v) + ' ' + model.getSpaceUnits() + '/' + model.getTimeUnits())
- 
-	# Get all the spots of the current track.
-    track = model.getTrackModel().trackSpots(id)
-    for spot in track:
+        self.settings.addAllAnalyzers()
+        
+    def process_image(self, image_path):
+        self.image_path = image_path
+        self.load_image()
+        self.load_settings()
+        self.trackmate = TrackMate(self.model, self.settings)
+        self.verify_trackmate()
+        
+        self.model.getLogger().log('Found ' + str(self.model.getTrackModel().nTracks(True)) + ' tracks.')
+        self.selectionModel = SelectionModel(self.model)
+        self.featureModel = self.model.getFeatureModel()
+        
+        image_name = os.path.splitext(os.path.basename(self.image_path))[0]
+        self.track_data_filename = os.path.join(self.output_path, image_name + "_track_data.csv")
+        self.spot_data_filename = os.path.join(self.output_path, image_name + "_spot_data.csv")
+        with open(self.track_data_filename, 'w') as track_file, open(self.spot_data_filename, 'w') as spot_file:
+            self.track_file = track_file
+            self.spot_file = spot_file
+            track_file.write("TRACK_ID,MEAN_SPEED\n")
+            spot_file.write("TRACK_ID,ID,POSITION_X,POSITION_Y,FRAME,QUALITY,SNR_CH1,MEAN_INTENSITY_CH1\n")
+            for track_id in self.model.getTrackModel().trackIDs(True):
+                self.process_track(track_id)
+                
+        self.track_file = None
+        self.spot_file = None
+                
+    def process_track(self, track_id):
+        v = self.featureModel.getTrackFeature(track_id, 'TRACK_MEAN_SPEED')
+        self.model.getLogger().log('')
+        self.model.getLogger().log('Track ' + str(track_id) + ': mean velocity = ' + str(v) + ' ' + self.model.getSpaceUnits() + '/' + self.model.getTimeUnits())
+        self.track_file.write(str(track_id) + "," + str(v) + "\n")
+        
+        track = self.model.getTrackModel().trackSpots(track_id)
+        for spot in track:
+            self.process_spot(spot, track_id)
+            
+    def process_spot(self, spot, track_id):
         sid = spot.ID()
-        # Fetch spot features directly from spot.
-        # Note that for spots the feature values are not stored in the FeatureModel
-        # object, but in the Spot object directly. This is an exception; for tracks
-        # and edges, you have to query the feature model.
-        x=spot.getFeature('POSITION_X')
-        y=spot.getFeature('POSITION_Y')
-        t=spot.getFeature('FRAME')
-        q=spot.getFeature('QUALITY')
-        snr=spot.getFeature('SNR_CH1')
-        mean=spot.getFeature('MEAN_INTENSITY_CH1')
-        model.getLogger().log('\tspot ID = ' + str(sid) + ': x='+str(x)+', y='+str(y)+', t='+str(t)+', q='+str(q) + ', snr='+str(snr) + ', mean = ' + str(mean))
-
+        x = spot.getFeature('POSITION_X')
+        y = spot.getFeature('POSITION_Y')
+        t = spot.getFeature('FRAME')
+        q = spot.getFeature('QUALITY')
+        snr = spot.getFeature('SNR_CH1')
+        mean = spot.getFeature('MEAN_INTENSITY_CH1')
+        self.model.getLogger().log('\tspot ID = ' + str(sid) + ': x='+str(x)+', y='+str(y)+', t='+str(t)+', q='+str(q) + ', snr='+str(snr) + ', mean = ' + str(mean))
+        self.spot_file.write(str(track_id) + "," + str(sid) + "," + str(x) + "," + str(y) + "," + str(t) + "," + str(q) + "," + str(snr) + "," + str(mean) + "\n")
+                    
+    def verify_trackmate(self):
+        ok = self.trackmate.checkInput()
+        if not ok:
+            sys.exit(str(self.trackmate.getErrorMessage()))
+        ok = self.trackmate.process()
+        if not ok:
+            sys.exit(str(self.trackmate.getErrorMessage())) 
+            
+    def process_directory(self, directory):
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            print("Processing image: " + file_path)
+            try:
+                self.process_image(file_path)
+            except Exception as e:
+                print("Error processing image: " + file_path)
+                print(e)
+                   
+    
+image_processor = ImageProcessor("settings.json", "./output")
+image_processor.process_directory("./images")
 print("end, Byeeee")
