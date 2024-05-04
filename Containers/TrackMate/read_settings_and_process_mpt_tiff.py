@@ -97,8 +97,8 @@ class ImageProcessor:
                 
     def process_track(self, track_id):
         v = self.featureModel.getTrackFeature(track_id, 'TRACK_MEAN_SPEED')
-        self.model.getLogger().log('')
-        self.model.getLogger().log('Track ' + str(track_id) + ': mean velocity = ' + str(v) + ' ' + self.model.getSpaceUnits() + '/' + self.model.getTimeUnits())
+        # self.model.getLogger().log('')
+        # self.model.getLogger().log('Track ' + str(track_id) + ': mean velocity = ' + str(v) + ' ' + self.model.getSpaceUnits() + '/' + self.model.getTimeUnits())
         self.track_file.write(str(track_id) + "," + str(v) + "\n")
         
         track = self.model.getTrackModel().trackSpots(track_id)
@@ -113,7 +113,7 @@ class ImageProcessor:
         q = spot.getFeature('QUALITY')
         snr = spot.getFeature('SNR_CH1')
         mean = spot.getFeature('MEAN_INTENSITY_CH1')
-        self.model.getLogger().log('\tspot ID = ' + str(sid) + ': x='+str(x)+', y='+str(y)+', t='+str(t)+', q='+str(q) + ', snr='+str(snr) + ', mean = ' + str(mean))
+        # self.model.getLogger().log('\tspot ID = ' + str(sid) + ': x='+str(x)+', y='+str(y)+', t='+str(t)+', q='+str(q) + ', snr='+str(snr) + ', mean = ' + str(mean))
         self.spot_file.write(str(track_id) + "," + str(sid) + "," + str(x) + "," + str(y) + "," + str(t) + "," + str(q) + "," + str(snr) + "," + str(mean) + "\n")
                     
     def verify_trackmate(self):
