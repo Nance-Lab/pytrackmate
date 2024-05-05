@@ -1,0 +1,22 @@
+{
+    "quality": 2.9,
+    "trackerSettings": {
+        "MAX_FRAME_GAP": 6,
+        "LINKING_MAX_DISTANCE": 15.0,
+        "GAP_CLOSING_MAX_DISTANCE": 20.0,
+        "ALTERNATIVE_LINKING_COST_FACTOR": 1.05,
+        "SPLITTING_MAX_DISTANCE": 15.0,
+        "ALLOW_GAP_CLOSING": true,
+        "MERGING_MAX_DISTANCE": 15.0,
+        "CUTOFF_PERCENTILE": 0.9,
+        "ALLOW_TRACK_SPLITTING": false,
+        "ALLOW_TRACK_MERGING": false
+    },
+    "detectorSettings": {
+        "DO_SUBPIXEL_LOCALIZATION": false,
+        "RADIUS": 6.0,
+        "TARGET_CHANNEL": 1,
+        "THRESHOLD": 0.0,
+        "DO_MEDIAN_FILTERING": false
+    }
+}

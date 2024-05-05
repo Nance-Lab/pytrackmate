@@ -8,7 +8,8 @@
 
 #SBATCH --nodes=8
 #SBATCH --time=28:00:00
-#SBATCH --ntasks=1
+#SBATCH --ntasks=8
+#SBATCH --cpus-per-task=40
 #SBATCH --mem=40G
 
 #SBATCH --chdir=.
