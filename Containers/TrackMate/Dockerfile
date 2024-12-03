@@ -21,7 +21,7 @@ RUN wget -q https://downloads.imagej.net/fiji/latest/fiji-nojre.zip \
 ENV PATH $PATH:/opt/fiji/Fiji.app
 
 # Init Fiji for quicker startups
-COPY Containers/TrackMateinit_fiji.py .
+COPY Containers/TrackMate/init_fiji.py .
 RUN python /opt/fiji/init_fiji.py
 
 WORKDIR /
