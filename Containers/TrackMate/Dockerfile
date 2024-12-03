@@ -21,12 +21,12 @@ RUN wget -q https://downloads.imagej.net/fiji/latest/fiji-nojre.zip \
 ENV PATH $PATH:/opt/fiji/Fiji.app
 
 # Init Fiji for quicker startups
-COPY init_fiji.py .
+COPY Containers/TrackMateinit_fiji.py .
 RUN python /opt/fiji/init_fiji.py
 
 WORKDIR /
-COPY read_settings_and_process_mpt_tiff.py .
-COPY entrypoint.sh .
+COPY Containers/TrackMate/read_settings_and_process_mpt_tiff.py .
+COPY Containers/TrackMate/entrypoint.sh .
 #RUN mamba install jupyterlab
 #WORKDIR /notebooks
 #EXPOSE 8888
