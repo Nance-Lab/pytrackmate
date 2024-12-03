@@ -2,7 +2,7 @@ FROM condaforge/mambaforge
 
 RUN mamba create -n pyimagej -c conda-forge pyimagej openjdk=8 unzip
 
-COPY requirements.txt /tmp/requirements.txt
+COPY Containers/TrackMate/requirements.txt /tmp/requirements.txt
 RUN python3 -m pip install -r requirements.txt
 
 #RUN conda activate pyimagej
