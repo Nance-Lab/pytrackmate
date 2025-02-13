@@ -29,6 +29,7 @@ from fiji.plugin.trackmate.gui.displaysettings import DisplaySettingsIO
 import fiji.plugin.trackmate.visualization.hyperstack.HyperStackDisplayer as HyperStackDisplayer
 import fiji.plugin.trackmate.features.FeatureFilter as FeatureFilter
 from fiji.plugin.trackmate.detection import DogDetectorFactory
+from fiji.plugin.trackmate.util import TMUtils
 
 # We have to do the following to avoid errors with UTF8 chars generated in
 # TrackMate that will mess with our Fiji Jython.
@@ -60,8 +61,8 @@ class ImageProcessor:
         self.settings.detectorFactory = DogDetectorFactory()
         self.settings.detectorSettings = self.settings_json["detectorSettings"]
         
-        filter1 = FeatureFilter('QUALITY', self.settings_json["quality"], True)
-        self.settings.addSpotFilter(filter1)
+        #filter1 = FeatureFilter('QUALITY', self.settings_json["quality"], True)
+        #self.settings.addSpotFilter(filter1)
 
         self.settings.trackerFactory = SparseLAPTrackerFactory()
         self.settings.trackerSettings = self.settings.trackerFactory.getDefaultSettings()
@@ -77,7 +78,7 @@ class ImageProcessor:
         self.trackmate = TrackMate(self.model, self.settings)
         self.verify_trackmate()
         
-        self.model.getLogger().log('Found ' + str(self.model.getTrackModel().nTracks(True)) + ' tracks.')
+        #self.model.getLogger().log('Found ' + str(self.model.getTrackModel().nTracks(True)) + ' tracks.')
         self.selectionModel = SelectionModel(self.model)
         self.featureModel = self.model.getFeatureModel()
         
@@ -91,6 +92,9 @@ class ImageProcessor:
             spot_file.write("TRACK_ID,ID,POSITION_X,POSITION_Y,FRAME,QUALITY,SNR_CH1,MEAN_INTENSITY_CH1\n")
             for track_id in self.model.getTrackModel().trackIDs(True):
                 self.process_track(track_id)
+            
+
+
                 
         self.track_file = None
         self.spot_file = None
@@ -133,8 +137,23 @@ class ImageProcessor:
             except Exception as e:
                 print("Error processing image: " + file_path)
                 print(e)
+            
+
+    def plot_spot_quality_histogram(self):
+
+        quality_list = []
+
+        all_spots = self.model.getTrackModel().getSpots()
+        for spot in all_spots:
+            quality = spot.getFeature('QUALITY')
+            quality_list.append(quality)
+
+        n_bins = TMUtils.getNBins(quality_list)
+        hist = TMUtils.hist(quality_list, n_bins)
+        auto_quality = TMUtils.otsuThreshold(quality_list, n_bins)
+
                    
     
-image_processor = ImageProcessor("settings.json", "./output")
-image_processor.process_directory("./images")
+image_processor = ImageProcessor("settings.json", "./output/agarose")
+image_processor.process_directory("./images/agarose")
 print("end, Byeeee")
