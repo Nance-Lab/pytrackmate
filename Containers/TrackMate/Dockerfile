@@ -2,7 +2,7 @@ FROM condaforge/mambaforge
 
 RUN mamba create -n pyimagej -c conda-forge pyimagej openjdk=8 unzip
 
-COPY requirements.txt /tmp/requirements.txt
+COPY Containers/TrackMate/requirements.txt /tmp/requirements.txt
 RUN python3 -m pip install -r requirements.txt
 
 #RUN conda activate pyimagej
@@ -21,12 +21,12 @@ RUN wget -q https://downloads.imagej.net/fiji/latest/fiji-nojre.zip \
 ENV PATH $PATH:/opt/fiji/Fiji.app
 
 # Init Fiji for quicker startups
-COPY init_fiji.py .
+COPY Containers/TrackMate/init_fiji.py .
 RUN python /opt/fiji/init_fiji.py
 
 WORKDIR /
-COPY read_settings_and_process_mpt_tiff.py .
-COPY entrypoint.sh .
+COPY Containers/TrackMate/read_settings_and_process_mpt_tiff.py .
+COPY Containers/TrackMate/entrypoint.sh .
 #RUN mamba install jupyterlab
 #WORKDIR /notebooks
 #EXPOSE 8888
